@@ -10,27 +10,29 @@ import sys
 import time
 #-------------------------------------------------------------------------------------------
 DEBUG=False
+# DEBUG=True
 Write = True
-Path='xml-p5-master'
-puncPattern=r'(\w|[　❥【】《》〔〕（）]|<.{0,5}>)'
+# Mylog = ' '
+Path='xml-p5-master\\T'
+puncPattern=r'(\w|[　❥\-【 】《》〔〕（）「」『』]|<.{0,5}>)'
 #-------------------------------------------------------------------------------------------
 
-def main(base=0,lens=1):   
+def main(base=1761,lens=1):   
     fileList = []
     for dirpath, dirnames, filenames in os.walk(Path):
         for file in filenames:
             if file.endswith('.xml'):
                  fileList.append(os.path.join(dirpath, file))
 
-    top=len(fileList)
-
-    if DEBUG:
-        top=base+lens
+    top=base+lens
+    if lens==-1:
+        top=len(fileList)
 
     for i in range(base,top):
         data=readFile(fileList[i])
         process(data,fileList[i])
         print(str(i+1).rjust(3,'0'),'/',len(fileList),'---$:',fileList[i])
+    # writeFile('log.txt',Mylog)
 
 #==========================================================  
 def preProcess(data):
@@ -100,6 +102,7 @@ def preProcess(data):
     data=re.sub(r'<figure>.+?</figure>','',data) 
     #--------------------------------------------------------------------------
     data=re.sub(r'<trailer>(.|\n)+?</trailer>','',data) 
+    data=re.sub(r'[\u25a1]','',data) 
     data=re.sub(r'[△○﹂]','',data) 
 
     data=re.sub(r'<cb:yin>.+?/cb:yin>','',data) 
@@ -135,7 +138,6 @@ def process(data,path):
 
     if DEBUG and Write:
         addr=path.replace('.xml','-D.xml')
-        writeFile(addr,data)
 
     if DEBUG and Write:
         pdata=re.sub(puncPattern,'',data)
@@ -144,8 +146,9 @@ def process(data,path):
 
     data=checkPunc(data)
     if Write:        
-        addr=path.replace('.xml','_out.xml')
-        writeFile(addr,data)
+        if len(data)>50:
+            addr=path.replace('.xml','_out.xml')
+            writeFile(addr,data)
     
     if DEBUG:
         ldata=re.sub(r'(<p>|<pin>|<juan>)','',data)
@@ -154,7 +157,7 @@ def process(data,path):
         if len(lis)>0:
             print(lis[0])
     
-    output(data,path)
+    # output(data,path)
 
 def output(dat,path):
     dat=re.sub(r'(<p>|<pin>|\n)','',dat)
@@ -165,14 +168,18 @@ def output(dat,path):
 
 def lastProcess(data):
     data=re.sub(r'(</p>)','',data)
-    data=re.sub(r'<p>','\n<p>',data)
-    data=re.sub(r'<pin>','\n<pin>\n',data)
-    data=re.sub(r'<juan>','\n<juan>\n',data)
+    data=re.sub(r'<p>','###',data)
+    data=re.sub(r'<pin>','@@@',data)
+    data=re.sub(r'<juan>','$$$',data)    
+    data=re.sub(r'(<.+?>)','',data)    
+    data=re.sub(r'###','\n<p>',data)
+    data=re.sub(r'@@@','\n<pin>\n',data)
+    data=re.sub(r'\$\$\$','\n<juan>\n',data)
     data=data.lstrip('\n').rstrip('\n')
     data=re.sub(r'：\n<p>','：',data)
     data=re.sub(r'\n+','\n',data)
-
-    data=re.sub(r'(<.+?>)','',data)    
+    data=re.sub(r'　+','　',data)
+    data=re.sub(r'　','<#sp>',data)
 
     return data
 
@@ -184,28 +191,35 @@ def checkPunc(data):
         if s=='<pin>' or s=='<juan>':
             continue
 
-        if len(s)>500 and s.count('。')<=1: 
+        if len(s)>500 and s.count('。')<=1 and s.count('，')<=1 and s.count('、')<=1: 
             s=''
         
-        if  len(s)<=500 and s.count('。')<=1 and s.count('？')==0 and s.count('，')==0 and s.count('！')==0 and s.count('：')==0 and s.count('、')==0 and s.count('；')==0: 
+        if  len(s)<=500 and s.count('。')<=1 and s.count('？')==0 and s.count('，')==0 and s.count('！')==0 and s.count('：')==0 and s.count('、')==0 and s.count('；')==0 and s.count('<#sp>')==0: 
             s=''
-        
+
         es=re.sub(puncPattern,'',s)
-        
+
         if len(es)!=0:
             # print(es.count('。'),len(es)  ,es.count('。')/len(es))
             if len(es)<2:
                 s=''
-            if es.count('。')/len(es)>0.9 and len(es)>3:
+            elif es.count('。')/len(es)>0.9 and len(es)>3:
                 s=''
 
-            jd= es.replace('。','').replace('．','')
+            jd= es.replace('。','').replace('．','').replace('、','')
             if len(jd)==0:
                 s=''
+            else:
+                jd=jd.replace('，','').replace('；','').replace('！','')
+                jd=jd.replace('：','').replace('？','').replace('—','')
+                jd=jd.replace('…','').replace('❥','')
+                if len(jd)!=0:
+                    s=''
+            
 
         #--------------------------------------------------------------
         s=re.sub(r'□…□.+?。','',s)
-        s=re.sub(r'.+…….+','',s)
+        s=re.sub(r'.+….+','',s)
         #--------------------------------------------------------------
 
         if s.count('「')==1 and s[3]=='「':
@@ -218,7 +232,7 @@ def checkPunc(data):
             if s[-1]=='』':
                 s=s.replace('』','')
 
-        if s!='' and s.endswith('。')==False and s.endswith('！')==False and s.endswith('？')==False and s.endswith('」')==False and s.endswith('』')==False:
+        if s!='' and s.endswith('，')==False and s.endswith('。')==False and s.endswith('！')==False and s.endswith('？')==False and s.endswith('」')==False and s.endswith('』')==False:
             s+='。'
 
         sdata[i]=s
@@ -227,6 +241,7 @@ def checkPunc(data):
     data=re.sub(r'<pin>\n+<juan>','',data)
     data=re.sub(r'<pin>\n+<pin>','',data)
     data=re.sub(r'<juan>\n+<juan>','',data)
+    data=re.sub(r'\n<#sp>','<#sp>',data)
     data=re.sub(r'\n+','\n',data)
     data=data.lstrip('\n').rstrip('\n')
     return data
@@ -254,10 +269,16 @@ def createMap(data):
 def replaceCB(data,mlis):
     #   <g ref="#CB00006">𤦲</g>       
     for i in range(len(mlis)):
-        if mlis[i][1]!='':
-            c= chr(eval( '0x'+mlis[i][1].rjust(8,'0')))
+        c=mlis[i][1]
+        if c!='':
+            if len(c)>=5:
+                c='❥'
+            else:
+                c= chr(eval( '0x'+mlis[i][1].rjust(8,'0')))
         else:
             c=mlis[i][2]
+            if len(c)>=5:
+                c='❥'
         data=re.sub(r'>.{1,2}</g>','><$',data)
         data=data.replace('<g ref="#'+mlis[i][0]+'"><$',c) 
     return data
@@ -304,6 +325,7 @@ def  readFile(filedir):
     return string
 
 def writeFile(filedir, string):
+
     if filedir.find('\\') != -1:
         path = filedir[0:filedir.rfind("\\")]
         if not os.path.exists(path):
@@ -327,3 +349,5 @@ if __name__ == '__main__':
     else:
         main() 
 #==========================================================
+
+

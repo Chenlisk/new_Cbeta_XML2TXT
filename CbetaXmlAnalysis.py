@@ -12,27 +12,29 @@ import time
 DEBUG=False
 # DEBUG=True
 Write = True
-# Mylog = ' '
 Path='xml-p5-master\\T'
-puncPattern=r'(\w|[　❥\-【 】《》〔〕（）「」『』]|<.{0,5}>)'
+puncPattern=r'(\w|[　─❥│\-【 】《》〔〕（）「」『』]|<.{0,5}>)'
 #-------------------------------------------------------------------------------------------
-
+# Mylog = ' '
 def main(base=1761,lens=1):   
+    # subf=['B','GA','N','T','ZW']
     fileList = []
     for dirpath, dirnames, filenames in os.walk(Path):
         for file in filenames:
             if file.endswith('.xml'):
-                 fileList.append(os.path.join(dirpath, file))
+                fileList.append(os.path.join(dirpath, file))
 
     top=base+lens
     if lens==-1:
         top=len(fileList)
 
-    for i in range(base,top):
+    for i in range(base,top,1):
         data=readFile(fileList[i])
         process(data,fileList[i])
-        print(str(i+1).rjust(3,'0'),'/',len(fileList),'---$:',fileList[i])
-    # writeFile('log.txt',Mylog)
+        tim=str(datetime.datetime.now())[0:-7]
+        print(tim,' ---> ',str(i+1).rjust(3,'0'),'/',len(fileList),'---$:',fileList[i])
+            
+        # writeFile('log.txt',Mylog)
 
 #==========================================================  
 def preProcess(data):
@@ -43,45 +45,35 @@ def preProcess(data):
     data=re.sub(r'<!--.+?-->','',data)
     data=re.sub(r'<cb:docNumber>(.|\n)+?</cb:docNumber>','',data)
     data=re.sub(r'<anchor xml.+?/>','',data)
-    data=re.sub(r'<byline.+?</byline>','',data)
-    data=re.sub(r'<head.+?</head>','',data)
-   
-    data=re.sub(r'<cb:div type="pin">','\n<pin>\n',data)
+    data=re.sub(r'<byline.+?>','<p>',data)
+    data=re.sub(r'</byline>','',data)
+    data=re.sub(r'<head>','<p>',data)
+    data=re.sub(r'</head>','',data)
+    data=re.sub(r'<cb:div type="jing">','<p>',data)
     data=re.sub(r'<cb:div type="w">(.|\n)+?</cb:div>','',data) 
+    data=re.sub(r'<cb:div type="pin">','<p>',data)
+    data=re.sub(r'<cb:jhead type="pin">','<p>',data)    
     data=re.sub(r'<cb:div type="other">.+?>題解<(.|\n)+?</cb:div>','',data) 
     data=re.sub(r'<cb:div type="dharani">(.|\n)+?</cb:div>','\n\n',data)#</cb:div>
     data=re.sub(r'<cb:div.+?type=.+?>','\n\n',data)#</cb:div> 
-       
-    data=re.sub(r'<cb:div type="pin">','\n<pin>\n',data)
-    data=re.sub(r'<cb:div type="w">(.|\n)+?</cb:div>','',data) 
-    data=re.sub(r'<cb:div type="other">.+?>題解<(.|\n)+?</cb:div>','',data) 
-    data=re.sub(r'<cb:div type="dharani">(.|\n)+?</cb:div>','\n\n',data)#</cb:div>
-    data=re.sub(r'<cb:div.+?type=.+?>','\n\n',data)#</cb:div> 
-    data=re.sub(r'<cb:juan.+?fun="open".+?</cb:juan>','\n<juan>\n',data)
+    data=re.sub(r'</?title>','',data)
+    data=re.sub(r'</?cb:jhead>','',data)    
+    data=re.sub(r'<cb:juan.+?fun="open.+?>','<juan>',data)    
     data=re.sub(r'<cb:juan.+?</cb:juan>','',data)
+    data=re.sub(r'</cb:juan>','',data)
     data=re.sub(r'<cb:mulu.+?</cb:mulu>','',data)  
     data=re.sub(r'(<cb:dialog type(.|\n)+?>|</cb:dialog>)','',data)
-    
     data=re.sub(r'<anchor type="circle"/>','',data)
     data=re.sub(r'<table(.|\n)+?</table>','',data)
     data=re.sub(r'<date>(.|\n)+?</date>','',data)
     data=re.sub(r'<formula(.|\n)+?</formula>','',data)
-
     data=re.sub(r'(<sp cb:type(.|\n)+?>|</sp>)','',data)
     data=re.sub(r'</?cb:event>','',data)
     data=re.sub(r'<unclear></unclear>','',data)
-
     data=re.sub(r'(<list>|</list>)','',data)
     data=re.sub(r'(<item xml.+?>|</item>)','',data)
     data=re.sub(r'<lb.+?ed=.+?/>','',data)
-
-    data=fullyDel('<entry','</entry>',data)
-   
-    data=re.sub(r'<cb:div type="pin">','\n<pin>\n',data)
-    data=re.sub(r'<cb:div type="w">(.|\n)+?</cb:div>','',data) 
-    data=re.sub(r'<cb:div type="other">.+?>題解<(.|\n)+?</cb:div>','',data) 
-    data=re.sub(r'<cb:div type="dharani">(.|\n)+?</cb:div>','\n\n',data)#</cb:div>
-    data=re.sub(r'<cb:div.+?type=.+?>','\n\n',data)#</cb:div> 
+    data=fullyDel('<entry','</entry>',data)   
     #--------------------------------------------------------------------------
     data=re.sub(r'<p cb:type="head.+?>','',data) 
     data=re.sub(r'<p cb:type="pre.+?</p>','',data) 
@@ -89,10 +81,10 @@ def preProcess(data):
     data=re.sub(r'<lb.+?ed=.+?/>','',data)
     data=re.sub(r'<pb (xml:id=.+?)?(n=.+?)?ed=.+?/>','',data)
     data=re.sub(r'(<lg (xml:id=|rend|type=).+?>|</lg>)','',data)
-    data=re.sub(r'<note place="inline">.+?</note>','',data)
+    data=re.sub(r'<note place="inline">','（',data)
+    data=re.sub(r'</note>','）',data)
     data=re.sub(r'<ref target="#PTS(.|\n)+?</ref>','',data)
     data=re.sub(r'<label type=(.|\n)+?</label>','',data)
-
     data=re.sub(r'<head.+?</head>','',data)  
     data=re.sub(r'<milestone.+?(unit="juan")?/>','',data)
     data=re.sub(r'</?cb:div>','',data)       
@@ -103,14 +95,10 @@ def preProcess(data):
     #--------------------------------------------------------------------------
     data=re.sub(r'<trailer>(.|\n)+?</trailer>','',data) 
     data=re.sub(r'[\u25a1]','',data) 
-    data=re.sub(r'[△○﹂]','',data) 
-
-    data=re.sub(r'<cb:yin>.+?/cb:yin>','',data) 
-    data=re.sub(r'(</?cb:fan>|</?cb:zi>)','',data)
-
-    data=re.sub(r'<cb:tt>.+?</cb:tt>','',data)  
+    data=re.sub(r'[△○﹂※★]','',data)
+    data=re.sub(r'(</?cb:tt?>|<cb:tt? .+?>|</?cb:yin>|</?cb:fan>|</?cb:zi>|</?cb:sg>)','',data)
     data=re.sub(r'<cb:t xml:lang="sa-Sidd">.+?/cb:t>','',data) 
-    data=re.sub(r'(</?cb:tt?>|<cb:tt? .+?>)','',data) 
+    data=re.sub(r'(<note.+?>|</note>)','',data) 
     data=re.sub(r'(<term xml:lang="sa\-Sidd">|</term>)','',data)
 
     return data
@@ -120,15 +108,15 @@ def process(data,path):
     path='Result'+path[path.find('\\'):]
     path=re.sub(r'[A-Z]{1,2}\d{2,3}\\','',path)
 
-    if DEBUG and Write:
-        tdata=re.sub(r'(\W|[0-z])','',data)
-        addr=path.replace('.xml','-T.xml')
-        writeFile(addr,tdata)
+    # if DEBUG and Write:
+    #     tdata=re.sub(r'(\W|[0-z])','',data)
+    #     addr=path.replace('.xml','-T.xml')
+    #     writeFile(addr,tdata)
 
-    if DEBUG and Write:
-        bdata=getStr(data,'<body>','</body>')
-        addr=path.replace('.xml','-B.xml')
-        writeFile(addr,bdata)
+    # if DEBUG and Write:
+    #     bdata=getStr(data,'<body>','</body>')
+    #     addr=path.replace('.xml','-B.xml')
+    #     writeFile(addr,bdata)
 
     mlist=createMap(data)
     data=preProcess(data)
@@ -137,21 +125,22 @@ def process(data,path):
     data=lastProcess(data)
 
     if DEBUG and Write:
-        addr=path.replace('.xml','-D.xml')
+        addr=path.replace('.xml','-D.h.xml')
+        writeFile(addr,data)
 
     if DEBUG and Write:
         pdata=re.sub(puncPattern,'',data)
-        addr=path.replace('.xml','-P.xml')
+        addr=path.replace('.xml','-P.txt')
         writeFile(addr,pdata)  
 
     data=checkPunc(data)
-    if Write:        
+    if Write:
         if len(data)>50:
             addr=path.replace('.xml','_out.xml')
             writeFile(addr,data)
     
     if DEBUG:
-        ldata=re.sub(r'(<p>|<pin>|<juan>)','',data)
+        ldata=re.sub(r'(<p>|<juan>)','',data)
         pattern=re.compile(r'<.+?>')
         lis=pattern.findall(ldata)
         if len(lis)>0:
@@ -160,8 +149,8 @@ def process(data,path):
     # output(data,path)
 
 def output(dat,path):
-    dat=re.sub(r'(<p>|<pin>|\n)','',dat)
-    dat=re.sub(r'<juan>','\n\n',dat)
+    dat=re.sub(r'(<p>|\n)','',dat)
+    dat=re.sub(r'<juan>','\n',dat)
     dat=dat.lstrip('\n').rstrip('\n')
     addr=path.replace('.xml','.out').replace('Result','TrainData')
     writeFile(addr,dat)     
@@ -169,80 +158,55 @@ def output(dat,path):
 def lastProcess(data):
     data=re.sub(r'(</p>)','',data)
     data=re.sub(r'<p>','###',data)
-    data=re.sub(r'<pin>','@@@',data)
     data=re.sub(r'<juan>','$$$',data)    
     data=re.sub(r'(<.+?>)','',data)    
-    data=re.sub(r'###','\n<p>',data)
-    data=re.sub(r'@@@','\n<pin>\n',data)
-    data=re.sub(r'\$\$\$','\n<juan>\n',data)
+    data=re.sub(r'###','<p>',data)
+    data=re.sub(r'\$\$\$','\n<juan>',data)
     data=data.lstrip('\n').rstrip('\n')
-    data=re.sub(r'：\n<p>','：',data)
+    # data=re.sub(r'：<p>','：',data)
     data=re.sub(r'\n+','\n',data)
     data=re.sub(r'　+','　',data)
     data=re.sub(r'　','<#sp>',data)
 
+    data=re.sub(r'(<p>)+','<p>',data)
+    data=re.sub(r'\n?<p>\n?','<p>',data)   
+    data=re.sub(r'<.+?><','<',data)
+    
     return data
 
 def checkPunc(data):
-    # data=data.replace('<','#<')
-    sdata=data.split('\n')
+    sdata=data.split('<juan>')
     for i in range(len(sdata)):
         s=sdata[i]
-        if s=='<pin>' or s=='<juan>':
+        if s=='':
             continue
 
-        if len(s)>500 and s.count('。')<=1 and s.count('，')<=1 and s.count('、')<=1: 
+        es=re.sub(puncPattern,'',s)#有效符号
+        if len(es)!=0:            
+            puncPercent=len(es)/len(s)
+            periodPercent=es.count('。')/len(es)
+            nJudou=1-len(es.replace('。','').replace('．',''))/len(es)            
+            # print(50*'-','>')
+            # print('punc/len: ',len(es),'/',len(s)  ,'  ',puncPercent)
+            # print('period/len: ',es.count('。'),'/',len(es)  ,'  ',periodPercent)
+            # print('njudou/len: ',len(es.replace('。','').replace('．','')),'/',len(es)  ,'  ',nJudou)
+
+            if puncPercent<0.08:
+                s=''
+            if periodPercent>0.9:
+                s=''
+            if nJudou>0.9:
+                s=''
+        else:
             s=''
-        
-        if  len(s)<=500 and s.count('。')<=1 and s.count('？')==0 and s.count('，')==0 and s.count('！')==0 and s.count('：')==0 and s.count('、')==0 and s.count('；')==0 and s.count('<#sp>')==0: 
-            s=''
-
-        es=re.sub(puncPattern,'',s)
-
-        if len(es)!=0:
-            # print(es.count('。'),len(es)  ,es.count('。')/len(es))
-            if len(es)<2:
-                s=''
-            elif es.count('。')/len(es)>0.9 and len(es)>3:
-                s=''
-
-            jd= es.replace('。','').replace('．','').replace('、','')
-            if len(jd)==0:
-                s=''
-            else:
-                jd=jd.replace('，','').replace('；','').replace('！','')
-                jd=jd.replace('：','').replace('？','').replace('—','')
-                jd=jd.replace('…','').replace('❥','')
-                if len(jd)!=0:
-                    s=''
-            
-
-        #--------------------------------------------------------------
-        s=re.sub(r'□…□.+?。','',s)
-        s=re.sub(r'.+….+','',s)
-        #--------------------------------------------------------------
-
-        if s.count('「')==1 and s[3]=='「':
-            s=s.replace('「','')
-            if s[-1]=='」':
-                s=s.replace('」','')
-
-        if s.count('『')==1 and s[3]=='『':
-            s=s.replace('『','')
-            if s[-1]=='』':
-                s=s.replace('』','')
 
         if s!='' and s.endswith('，')==False and s.endswith('。')==False and s.endswith('！')==False and s.endswith('？')==False and s.endswith('」')==False and s.endswith('』')==False:
             s+='。'
 
         sdata[i]=s
-    data=''.join(sdata)
-    data=re.sub(r'<','\n<',data)
-    data=re.sub(r'<pin>\n+<juan>','',data)
-    data=re.sub(r'<pin>\n+<pin>','',data)
-    data=re.sub(r'<juan>\n+<juan>','',data)
-    data=re.sub(r'\n<#sp>','<#sp>',data)
-    data=re.sub(r'\n+','\n',data)
+    data='\n<juan>'.join(sdata)    
+    data=re.sub(r'(<juan>\n)+','<juan>',data)
+    # data=re.sub(r'\n+','\n',data)
     data=data.lstrip('\n').rstrip('\n')
     return data
     
@@ -285,10 +249,7 @@ def replaceCB(data,mlis):
 
 def dharani(data):
     while data.find('<p cb:type="dharani" xml:id=')!=-1:
-        d=getStr(data,'<p cb:type="dharani" xml:id=','</p>','w')
-        # r=d.replace('　','，')
-        # r=r.replace('』','。』')
-        # r=r.replace('</p>','。</p>').replace('。。','。')
+        d=getStr(data,'<p cb:type="dharani" xml:id=','</p>','w')       
         r=re.sub(r'<p cb:type="dharani" xml:id=.+?>','<p>',d)
         data=data.replace(d,r)
     return data
@@ -325,7 +286,6 @@ def  readFile(filedir):
     return string
 
 def writeFile(filedir, string):
-
     if filedir.find('\\') != -1:
         path = filedir[0:filedir.rfind("\\")]
         if not os.path.exists(path):
